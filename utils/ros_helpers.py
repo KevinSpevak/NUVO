@@ -43,4 +43,4 @@ def extract_from_bag(bagfile, outname):
     out0.release()
     out1.release()
 
-extract_from_bag("dataset-corridor4_512_16.bag", "hall")
+# extract_from_bag("dataset-corridor4_512_16.bag", "hall")

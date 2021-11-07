@@ -9,4 +9,4 @@ Using the TUM VI dataset for validation data. See
 https://vision.in.tum.de/data/datasets/visual-inertial-dataset
 
 The raw ```.bag``` files from the public dataset are too large to add to the repo. They can be put in ```data/raw/``` which is in ```.gitignore```.
-```data/extracted``` contains video feeds extracted from the dataset and encoded as ```.avi``` files.
+```data/extracted``` contains video feeds extracted from the dataset and encoded as ```.avi``` files. ```data/intermediates``` contains processed video files.
