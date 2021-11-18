@@ -35,6 +35,10 @@ TUM_VI_CAM_0_PIN = Camera(190.97847715128717, 190.9733070521226, 254.93170605935
 TUM_VI_CAM_1_PIN = Camera(190.44236969414825, 190.4344384721956, 252.59949716835982, 254.91723064636983,
                           [0.0034003170790442797, 0.001766278153469831, -0.00266312569781606, 0.0003299517423931039])
 
+class ImageProcessingError(Exception):
+    def __init__(self, message):
+        self.message = message
+
 def undistort_video(original, outname, source_cam, target_cam):
     video = cv2.VideoCapture("../data/extracted/" + original)
     success, frame = video.read()
@@ -46,6 +50,69 @@ def undistort_video(original, outname, source_cam, target_cam):
         out.write(source_cam.undistort(frame, target_cam))
         success, frame = video.read()
     out.release()
+
+# Find the change in rotation and translation of a camera between two consecutive images
+# Returns the rotation matrix and translation vector from the camera's pose when im0 was taken
+# to the pose when im1 was taken
+def find_relative_pose(cam, im0, im1):
+    # hard-coding threshold for ambiguous matches for now
+    ambiguous_match_thresh = 0.8
+    # Detect Features
+    orb = cv2.ORB_create()
+    im0_kps, im0_desc = orb.detectAndCompute(im0, None)
+    im1_kps, im1_desc = orb.detectAndCompute(im1, None)
+    # Match Features in im1 (query) to im0 (train)
+    matches = cv2.BFMatcher.create(cv2.NORM_HAMMING).knnMatch(im1_desc, im0_desc, k=2)
+    matches = [m[0] for m in matches if m[0].distance < ambiguous_match_thresh * m[1].distance]
+    if len(matches) < 5:
+        raise ImageProcessingError("Not enough feature matches")
+    im0_points = np.float32([im0_kps[m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
+    im1_points = np.float32([im1_kps[m.queryIdx].pt for m in matches]).reshape(-1, 1, 2)
+    # Find Essential Matrix and Rotation and Translation from camera pose 0 to pose 1
+    E, _ = cv2.findEssentialMat(im0_points, im1_points, cam.K())
+    success, R, t, _ = cv2.recoverPose(E, im0_points, im1_points, cam.K())
+    if not success:
+        raise ImageProcessingError("Could not recover pose")
+    return R, t
+
+# returns rectified images
+# Not currently working, so currently just transforming the second image to match the perspective of the first
+def rectify(cam0, cam1, im0, im1):
+    # Card-coding these parameters for now (see cv2.findFundamentalMat)
+    # Maximum distance of an inlier point from an epipolar line, documentation suggests 1-3
+    ransacReprojThreshold = 3
+    # Desired confidence that estimated matrix is correct. Can try increasing if we get
+    # too many wrong values, or decreasing if this runs too slow
+    confidence = 0.99
+
+    # Detect Features
+    orb = cv2.ORB_create()
+    im0_kps, im0_desc = orb.detectAndCompute(im0, None)
+    im1_kps, im1_desc = orb.detectAndCompute(im1, None)
+    # Match Features (hard-coding 0.8 as ambiguous match threshold)
+    matches = cv2.BFMatcher.create(cv2.NORM_HAMMING).knnMatch(im1_desc, im0_desc, k=2)
+    matches = [m[0] for m in matches if m[0].distance < 0.8 * m[1].distance]
+    if len(matches) < 8:
+        raise ImageProcessingError("Not enough feature matches")
+    im0_points = np.float32([im0_kps[m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
+    im1_points = np.float32([im1_kps[m.queryIdx].pt for m in matches]).reshape(-1, 1, 2)
+    # Find the fundamental matrix and compute rectification transforms
+    F, mask = cv2.findFundamentalMat(im0_points, im1_points, cv2.FM_RANSAC, ransacReprojThreshold, confidence)
+    # TODO: mask?
+    success, H0, H1 = cv2.stereoRectifyUncalibrated(im0_points, im1_points, F, (im0.shape[1], im0.shape[0]))
+    if not success:
+        raise ImageProcessingError("could not find rectification transforms")
+    print(H0)
+    print(H1)
+    im0_points = np.array([im0_points[i] for i in range(len(mask)) if mask[i]])
+    im1_points = np.array([im1_points[i] for i in range(len(mask)) if mask[i]])
+    success, H0, H1 = cv2.stereoRectifyUncalibrated(im0_points, im1_points, F, (im0.shape[1], im0.shape[0]))
+    if not success:
+        raise ImageProcessingError("could not find rectification transforms")
+    print(H0)
+    print(H1)
+
+
 
 # undistort_video("hall0.avi", "hall0_flat.avi", TUM_VI_CAM_0, TUM_VI_CAM_0_PIN)
 # undistort_video("hall1.avi", "hall1_flat.avi", TUM_VI_CAM_1, TUM_VI_CAM_1_PIN)
