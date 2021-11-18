@@ -7,7 +7,7 @@ import glob
 # These are the inner corners of the squares. Note that it doesn't find the outer corners, so the actual
 # grid is 6 x 7 corners. Units don't matter because we are not interested in the absolute camera poses.
 target_pts = np.zeros((6 * 8, 3), np.float32)
-target_pts[:, :2] = np.mgrid[0:7, 0:6].T.reshape(-1, 2)
+target_pts[:, :2] = np.mgrid[0:8, 0:6].T.reshape(-1, 2)
 # Arrays to store object points and image points from all the images.
 objpoints = []  # Collect all 3d points in target coordinates
 imgpoints = []  # Collect all 2d points in image plane
