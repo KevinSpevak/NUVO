@@ -23,7 +23,18 @@ def main():
         print("Cannot read video source")
         sys.exit()
 
+    img_height = bgr_img_left.shape[0]
+    img_width = bgr_img_left.shape[1]
+    # print(img_width, img_height)
     frame_count = 0
+    # Get camera rectification parameters with individually calibrated intrinsic matrices
+    K_left = np.eye(3)
+    K_right = np.eye(3)
+    retval, K_left, distCoeffs_left, K_right, distCoeffs_right, R, T, E, F = getRectificationParameters(K_left=K_left, K_right=K_right)
+
+    R1, R2, P1, P2, Q, validPixROI1, validPixROI2 = cv2.stereoRectify(cameraMatrix1=K_left,cameraMatrix2=K_right,
+                          distCoeffs1 = distCoeffs_left,distCoeffs2 = distCoeffs_right,
+                          R=R,T=T, imageSize= (img_width,img_height))
     while True:
         got_image_left, bgr_img_left = video_capture_left.read()
         got_image_right, bgr_img_right = video_capture_right.read()
@@ -33,16 +44,6 @@ def main():
             break  # End of video; exit the while loop
         img_left = cv2.cvtColor(bgr_img_left, cv2.COLOR_BGR2GRAY)
         img_right = cv2.cvtColor(bgr_img_right, cv2.COLOR_BGR2GRAY)
-        img_height = img_left.shape[0]
-        img_width = img_left.shape[1]
-        print(img_width, img_height)
-        # cv2.imshow('left_frames', bgr_img_left)
-        # cv2.imshow('right_frames', bgr_img_right)
-        # cv2.waitKey(30)
-
-        # Load the left and right images in gray scale
-        # imgLeft = cv2.imread('logga.png', 0)
-        # imgRight = cv2.imread('logga1.png', 0)
 
         # Initialize the stereo block matching object
         stereo = cv2.StereoBM_create(numDisparities=16, blockSize=5)
@@ -53,19 +54,20 @@ def main():
         # Normalize the image for representation
         min = disparity.min()
         max = disparity.max()
-        disparity = np.uint8(6400 * (disparity - min) / (max - min))
+        # disparity = np.uint8(6400 * (disparity - min) / (max - min))
+        # Display the disparity map
+        # cv2.imshow('disparity map', np.hstack((img_left, img_right, disparity)))
+        # cv2.waitKey(30)
+        if cv2.waitKey(0) == 27:  # ESC is ascii code 27
+            break
 
-        # retval, K_left, distCoeffs_left, K_right, distCoeffs_right, R, T, E, F = getCalibrationParametersForLogitechWebcams()
-
-        # Q = cv2.stereoRectify(cameraMatrix1=K_left,cameraMatrix2=K_right,
-        #                       distCoeffs1 = distCoeffs_left,distCoeffs2 = distCoeffs_right,
-        #                       R=R,T=T, imageSize= (img_width,img_height))
-
-        # depth = cv2.reprojectImageTo3D(disparity, Q)
-        # # Display the disparity map
-        cv2.imshow('disparity map', np.hstack((img_left,img_right, disparity)))
+        image_3d = cv2.reprojectImageTo3D(disparity, Q)
+        cv2.imshow('3D image', image_3d)
         cv2.waitKey(30)
-        # cv2.destroyAllWindows()
+        print("Disparity shape: ", disparity.shape)
+        print("Q shape: ", Q.shape)
+        print("What is a 3D Image: ", image_3d[320,240])
+    # cv2.destroyAllWindows()
 
 
 
