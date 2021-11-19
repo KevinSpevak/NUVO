@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import sys
+from logitech_webcam_calibration import *
 
 def getKMatrixForLogitechWebcams():
     f = 531
@@ -54,16 +55,15 @@ def main():
         max = disparity.max()
         disparity = np.uint8(6400 * (disparity - min) / (max - min))
 
-        # K1,K2 = getKMatrixForLogitechWebcams()
-        # R = np.eye(4)
-        # T = np.array([10, 0, 0])
-        # dist1 = 0
-        # Q = cv2.stereoRectify(cameraMatrix1=K1,cameraMatrix2=K2,
-        #                       distCoeffs1 = None,distCoeffs2 = None,
+        # retval, K_left, distCoeffs_left, K_right, distCoeffs_right, R, T, E, F = getCalibrationParametersForLogitechWebcams()
+
+        # Q = cv2.stereoRectify(cameraMatrix1=K_left,cameraMatrix2=K_right,
+        #                       distCoeffs1 = distCoeffs_left,distCoeffs2 = distCoeffs_right,
         #                       R=R,T=T, imageSize= (img_width,img_height))
 
-        # # Display the result
-        cv2.imshow('disparittet', np.hstack((img_left,img_right)))
+        # depth = cv2.reprojectImageTo3D(disparity, Q)
+        # # Display the disparity map
+        cv2.imshow('disparity map', np.hstack((img_left,img_right, disparity)))
         cv2.waitKey(30)
         # cv2.destroyAllWindows()
 
