@@ -31,7 +31,9 @@ frame_count = 0
 while True:
     got_image_left, bgr_img_left = video_capture_left.read()
     got_image_right, bgr_img_right = video_capture_right.read()
+
     if frame_count % 10 == 0:
+
         print("frame_count: ", frame_count)
 
         if not got_image_left or not got_image_right:
@@ -44,6 +46,7 @@ while True:
         # Find the chess board corners
         ret_val_left, corners_left = cv2.findChessboardCorners(gray_image_left, (8, 6), None)
         ret_val_right, corners_right = cv2.findChessboardCorners(gray_image_right, (8, 6), None)
+
         # If found, add object and image points.
         if ret_val_left == True and ret_val_right == True:
             # Optionally refine corner locations.
