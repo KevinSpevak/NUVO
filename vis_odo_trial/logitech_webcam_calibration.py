@@ -58,8 +58,8 @@ while True:
             imgpointsLeft.append(corners2_left)
             imgpointsRight.append(corners2_right)
             # Draw and display the corners
-            cv2.drawChessboardCorners(bgr_img_left, (6, 8), corners2_left, ret_val_left)
-            cv2.drawChessboardCorners(bgr_img_right, (6, 8), corners2_right, ret_val_right)
+            cv2.drawChessboardCorners(bgr_img_left, (8, 6), corners2_left, ret_val_left)
+            cv2.drawChessboardCorners(bgr_img_right, (8, 6), corners2_right, ret_val_right)
             cv2.imshow('img_left', bgr_img_left)
             cv2.imshow('img_right', bgr_img_right)
             # print("Image points left: ", imgpointsLeft)
@@ -69,9 +69,13 @@ while True:
 cv2.destroyAllWindows()
 # Do the calibration.
 print("starting calibration")
+k_guess_left=np.array([[650.0, 0, 320], [0, 650, 240], [0, 0, 1]])
+k_guess_right=np.array([[620.0, 0, 320], [0, 620, 240], [0, 0, 1]])
+d_guess_right = np.array([[0.0,0,0,0,0]])
+d_guess_left = np.array([[0.0,0,0,0,0]])
 retval, K_left, distCoeffs_left, K_right, distCoeffs_right, R, T, E, F = cv2.stereoCalibrate(
     objectPoints=objpoints, imagePoints1=imgpointsLeft, imagePoints2=imgpointsRight, imageSize=(w, h),
-    cameraMatrix1=None, distCoeffs1=None, cameraMatrix2=None, distCoeffs2=None)
+    cameraMatrix1=k_guess_left, distCoeffs1=d_guess_left, cameraMatrix2=k_guess_right, distCoeffs2=d_guess_right, flags=cv2.CALIB_USE_INTRINSIC_GUESS)
 print("ret_val: ", retval)
 
 print("Camera matrix 1:")
