@@ -2,20 +2,12 @@ import numpy as np
 import cv2
 import sys
 from logitech_webcam_calibration import *
-
-def getKMatrixForLogitechWebcams():
-    f = 531
-    c_x = 320
-    c_y = 240
-    K = np.array([[f, 0, c_x],
-                  [0, f, c_y],
-                  [0, 0, 1]])
-    return K,K
+import pickle
 
 def main():
     # Read images from a video file in the current folder.
-    video_capture_left = cv2.VideoCapture('../data/original/binocular_test_left.avi')  # Open left video capture object
-    video_capture_right = cv2.VideoCapture('../data/original/binocular_test_right.avi')  # Open right video capture object
+    video_capture_left = cv2.VideoCapture('../data/original/depth_test_left.avi')  # Open left video capture object
+    video_capture_right = cv2.VideoCapture('../data/original/depth_test_right.avi')  # Open right video capture object
     got_image_left, bgr_img_left = video_capture_left.read()  # Make sure we can read video from the left camera
     got_image_right, bgr_img_right = video_capture_right.read()  # Make sure we can read video from the right camera
 
@@ -27,10 +19,12 @@ def main():
     img_width = bgr_img_left.shape[1]
     # print(img_width, img_height)
     frame_count = 0
+
     # Get camera rectification parameters with individually calibrated intrinsic matrices
-    K_left = np.eye(3)
-    K_right = np.eye(3)
-    retval, K_left, distCoeffs_left, K_right, distCoeffs_right, R, T, E, F = getRectificationParameters(K_left=K_left, K_right=K_right)
+    cam_left = pickle.load(open("../data/calibration/intrinsics_left.p", "rb"))
+    cam_right = pickle.load(open("../data/calibration/intrinsics_right.p", "rb"))
+
+    retval, K_left, distCoeffs_left, K_right, distCoeffs_right, R, T, E, F = getRectificationParameters(cam_left['K'], cam_left['dist'], cam_right['K'], cam_right['dist'])
 
     R1, R2, P1, P2, Q, validPixROI1, validPixROI2 = cv2.stereoRectify(cameraMatrix1=K_left,cameraMatrix2=K_right,
                           distCoeffs1 = distCoeffs_left,distCoeffs2 = distCoeffs_right,

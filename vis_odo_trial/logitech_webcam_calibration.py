@@ -3,12 +3,9 @@ import cv2
 import glob
 import sys
 
-# This program reads images of a chessboard, finds corners, and calibrates the camera.
-# The chessboard is assumed to be 7 rows and 9 columns of squares.
-# Create points in target coordinates; i.e., (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0).
-# These are the inner corners of the squares. Note that it doesn't find the outer corners, so the actual
-# grid is 6 x 8 corners. Units don't matter because we are not interested in the absolute camera poses.
-def getRectificationParameters(K_left, K_right):
+# Compute rectification parameters using a stereo calibration video of an 8x6 chessboard
+# Requires existing calibration data for both cameras
+def getRectificationParameters(K_left, dist_left, K_right, dist_right):
     # Define edge length on the calibration chess board
     grid_size = 0.025 # m
 
@@ -22,8 +19,8 @@ def getRectificationParameters(K_left, K_right):
     imgpointsRight = []  # Collect all 2d points from the right camera in image plane
     #
     # Read images from a video file in the current folder.
-    video_capture_left = cv2.VideoCapture('../data/original/calibrate_left.avi')  # Open left video capture object
-    video_capture_right = cv2.VideoCapture('../data/original/calibrate_right.avi')  # Open right video capture object
+    video_capture_left = cv2.VideoCapture('../data/calibration/stereo_left.avi')  # Open left video capture object
+    video_capture_right = cv2.VideoCapture('../data/calibration/stereo_right.avi')  # Open right video capture object
     got_image_left, bgr_img_left = video_capture_left.read()  # Make sure we can read video from the left camera
     got_image_right, bgr_img_right = video_capture_right.read()  # Make sure we can read video from the right camera
 
@@ -39,7 +36,6 @@ def getRectificationParameters(K_left, K_right):
         if frame_count % 10 == 0:
 
             # print("frame_count: ", frame_count)
-
             if not got_image_left or not got_image_right:
                 print("Breaking out :/")
                 break  # End of video; exit the while loop
@@ -72,29 +68,18 @@ def getRectificationParameters(K_left, K_right):
     cv2.destroyAllWindows()
     # Do the calibration.
     print("Starting calibration")
-    # k_guess_left=np.array([[650.0, 0, 320], [0, 650, 240], [0, 0, 1]])
-    # k_guess_right=np.array([[620.0, 0, 320], [0, 620, 240], [0, 0, 1]])
-    d_guess_right = np.array([[0.0,0,0,0,0]])
-    d_guess_left = np.array([[0.0,0,0,0,0]])
     retval, K_left, distCoeffs_left, K_right, distCoeffs_right, R, T, E, F = cv2.stereoCalibrate(
         objectPoints=objpoints, imagePoints1=imgpointsLeft, imagePoints2=imgpointsRight, imageSize=(w, h),
-        cameraMatrix1=K_left, distCoeffs1=d_guess_left, cameraMatrix2=K_right, distCoeffs2=d_guess_right, flags=cv2.CALIB_USE_INTRINSIC_GUESS)
+        cameraMatrix1=K_left, distCoeffs1=dist_left, cameraMatrix2=K_right, distCoeffs2=dist_right, flags=cv2.CALIB_FIX_INTRINSIC)
     print("ret_val: ", retval)
+    print("R: ", R)
+    print("T: ", T)
 
-    print("Camera matrix 1:")
-    print(repr(K_left))
-    print("Camera matrix 2:")
-    print(repr(K_right))
-    print("Distortion coeffs 1:")
-    print(repr(distCoeffs_left))
-    print("Distortion coeffs 2:")
-    print(repr(distCoeffs_right))
     # Calculate re-projection error - should be close to zero.
     mean_error_left = 0
     mean_error_right = 0
     rvecs,_ = cv2.Rodrigues(R)
     print("rvecs", rvecs)
-    print("T", T)
     for i in range(len(objpoints)):
         imgpoints_left, _ = cv2.projectPoints(objpoints[i], rvecs, T, K_left, distCoeffs_left)
         imgpoints_right, _ = cv2.projectPoints(objpoints[i], rvecs, T, K_right, distCoeffs_right)
@@ -106,8 +91,8 @@ def getRectificationParameters(K_left, K_right):
     print( "total right error: {}".format(mean_error_right/len(objpoints)))
     # Optionally undistort and display the images.
     frame_count = 0
-    video_capture_left = cv2.VideoCapture('../data/original/calibrate_left.avi')  # Open left video capture object
-    video_capture_right = cv2.VideoCapture('../data/original/calibrate_right.avi')  # Open right video capture object
+    video_capture_left = cv2.VideoCapture('../data/calibrate/stereo_left.avi')  # Open left video capture object
+    video_capture_right = cv2.VideoCapture('../data/calibrate/stereo_right.avi')  # Open right video capture object
     while True:
         got_image_left, bgr_img_left = video_capture_left.read()
         got_image_right, bgr_img_right = video_capture_right.read()
@@ -116,12 +101,12 @@ def getRectificationParameters(K_left, K_right):
             break  # End of video; exit the while loop
 
         if frame_count % 10 == 0:
-            # cv2.imshow("distorted_left", bgr_img_left)
-            # cv2.imshow("distorted_right", bgr_img_right)
+            cv2.imshow("distorted_left", bgr_img_left)
+            cv2.imshow("distorted_right", bgr_img_right)
             undistorted_img_left = cv2.undistort(src=bgr_img_left, cameraMatrix=K_left, distCoeffs=distCoeffs_left)
             undistorted_img_right = cv2.undistort(src=bgr_img_right, cameraMatrix=K_right, distCoeffs=distCoeffs_right)
-            # cv2.imshow("undistorted_left", undistorted_img_left)
-            # cv2.imshow("undistorted_right", undistorted_img_right)
+            cv2.imshow("undistorted_left", undistorted_img_left)
+            cv2.imshow("undistorted_right", undistorted_img_right)
             # cv2.imwrite("undistorted_" + fname, undistorted_img)
             if cv2.waitKey(0) == 27:  # ESC is ascii code 27
                 break
