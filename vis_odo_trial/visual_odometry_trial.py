@@ -1,7 +1,6 @@
 import numpy as np
 import cv2
 import sys
-from logitech_webcam_calibration import *
 import pickle
 
 def main():
@@ -20,15 +19,12 @@ def main():
     # print(img_width, img_height)
     frame_count = 0
 
-    # Get camera rectification parameters with individually calibrated intrinsic matrices
+    # Left and right camera intrinsic parameters and stereo rectification parameters
     cam_left = pickle.load(open("../data/calibration/intrinsics_left.p", "rb"))
     cam_right = pickle.load(open("../data/calibration/intrinsics_right.p", "rb"))
-
-    retval, K_left, distCoeffs_left, K_right, distCoeffs_right, R, T, E, F = getRectificationParameters(cam_left['K'], cam_left['dist'], cam_right['K'], cam_right['dist'])
-
-    R1, R2, P1, P2, Q, validPixROI1, validPixROI2 = cv2.stereoRectify(cameraMatrix1=K_left,cameraMatrix2=K_right,
-                          distCoeffs1 = distCoeffs_left,distCoeffs2 = distCoeffs_right,
-                          R=R,T=T, imageSize= (img_width,img_height))
+    rect_params = pickle.load(open("../data/calibration/rectification_parameters.p", "rb"))
+    R1, R2, P1, P2, Q, validPixROI1, validPixROI2 = cv2.stereoRectify(cam_left['K'], cam_left['dist'], cam_right['K'], cam_right['dist'],
+                                                                      (img_width, img_height), rect_params['R'], rect_params['T'])
     while True:
         got_image_left, bgr_img_left = video_capture_left.read()
         got_image_right, bgr_img_right = video_capture_right.read()
