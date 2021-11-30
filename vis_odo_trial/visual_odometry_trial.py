@@ -2,17 +2,7 @@ import numpy as np
 import cv2
 import sys
 import pickle
-ply_header = '''ply
-format ascii 1.0
-element vertex %(vert_num)d
-property float x
-property float y
-property float z
-property uchar red
-property uchar green
-property uchar blue
-end_header
-'''
+from utils.computeAvgForegroundDepth import *
 
 def main():
     # Read images from a video file in the current folder.
@@ -62,32 +52,22 @@ def main():
         image_right = cv2.cvtColor(bgr_img_right, cv2.COLOR_BGR2GRAY)
         img_height = image_left.shape[0]
         img_width = image_left.shape[1]
-        print("Input image dim: ",img_width, img_height)
+
         if not got_image_left or not got_image_right:
             print("Breaking out :/")
             break  # End of video; exit the while loop
 
         disparity = stereo.compute(image_left, image_right).astype(np.float32)# / 16.0
-        print('Disparity shape: ', disparity.shape)
         image_3d = cv2.reprojectImageTo3D(disparity, Q)
 
-
-        # image_3d= cv2.cvtColor(image_3d, cv2.COLOR_BGR2GRAY)
         cv2.imshow('3D image', image_3d)
         cv2.waitKey(0)
-
         # cv2.imshow('disparity', (disparity - min_disp) / num_disp)
 
-        print('3D image shape: ',image_3d.shape)
-        # print('3rd dim : ', image_3d[2])
-        #print("Calculating depth at: ", (320,240))
-        cv2.drawMarker(bgr_img_left, position=(320, 240),
-                       color=(0,0,0), markerType=cv2.MARKER_CROSS)
-        cv2.imshow('left', bgr_img_left)
-        cv2.waitKey(0)
-        # print("Value at (320,240,1) is: ", image_3d[320][240][0])
-        # print("Value at (320,240,2) is: ", image_3d[320][240][1])
-        print("Depth at (320,240,3) is: ", image_3d[320][240][2])
+        bgr_img_left = computeAvgForegroundDepth(bgr_img_left,image_3d)
+        cv2.imshow('Calculating depth at box', bgr_img_left)
+        cv2.waitKey(30)
+
 
 
 
