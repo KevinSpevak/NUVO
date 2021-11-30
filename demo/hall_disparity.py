@@ -1,6 +1,7 @@
 import pickle
 import cv2
 import numpy as np
+from utils.computeAvgForegroundDepth import *
 
 def main():
     cam_left = pickle.load(open("data/calibration/intrinsics_left.p", "rb"))
@@ -19,8 +20,8 @@ def main():
                                    sgbm_params["P1"], sgbm_params["P2"], sgbm_params["disp12MaxDiff"], sgbm_params["preFilterCap"],
                                    sgbm_params["uniquenessRatio"], sgbm_params["speckleWindowSize"], sgbm_params["speckleRange"])
 
-    video_left = cv2.VideoCapture("data/original/hall_left.avi")
-    video_right = cv2.VideoCapture("data/original/hall_right.avi")
+    video_left = cv2.VideoCapture("data/original/wall_left.avi")
+    video_right = cv2.VideoCapture("data/original/wall_right.avi")
     while True:
         got_left, img_left = video_left.read()
         got_right, img_right = video_right.read()
@@ -30,9 +31,16 @@ def main():
         img_right = cv2.cvtColor(img_right, cv2.COLOR_BGR2GRAY)
         rectified_left = cv2.remap(img_left, map_left_1, map_left_2, cv2.INTER_LINEAR)
         rectified_right = cv2.remap(img_right, map_right_1, map_right_2, cv2.INTER_LINEAR)
-        disparity = stereo.compute(rectified_left, rectified_right).astype(np.float32)
+
+        # Magic number 16 used here - collective comprehension for the reason is low
+        disparity = stereo.compute(rectified_left, rectified_right).astype(np.float32)/16
         max, min = disparity.max(), disparity.min()
         cv2.imshow("disparity", (disparity - min)/(max-min))
+
+        image_3d = cv2.reprojectImageTo3D(disparity, Q)
+        img_left = computeAvgForegroundDepth(rectified_left, image_3d)
+        cv2.imshow('Calculating depth at box', img_left)
+        cv2.waitKey(30)
 
         if cv2.waitKey(40) == 27:
             break
