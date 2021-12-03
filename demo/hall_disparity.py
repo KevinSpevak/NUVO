@@ -43,7 +43,10 @@ def main():
         cv2.imshow("right", img_right)
         cv2.imshow("left", img_left)
         img_3d = cv2.reprojectImageTo3D(disparity, Q)
-
+        img_3d = img_3d[validPixROI1[1]: validPixROI1[3], validPixROI1[0]:validPixROI1[2]]
+        img_left = img_left[validPixROI1[1]: validPixROI1[3], validPixROI1[0]:validPixROI1[2]]
+        cv2.imshow("cropped left", img_left)
+        cv2.waitKey(0)
         # Get features
         kps, desc = orb.detectAndCompute(img_left, None)
         if (prev_kps):
