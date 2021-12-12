@@ -12,4 +12,4 @@ def drawPoseOnImage(T, img):
                 ' tx = ' + str(np.round(t_x, 1)) + ' ty = ' + str(np.round(t_y, 1)) + ' tz = ' + str(np.round(t_z, 1))
     print('pose text: ', pose_text)
     cv2.putText(img, text=pose_text, org=(0, image_height - 10), fontFace=cv2.FONT_HERSHEY_SIMPLEX,
-                fontScale=0.45, color=(255, 255, 255))
+                fontScale=0.5, color=(255, 255, 255))

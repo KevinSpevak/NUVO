@@ -14,11 +14,11 @@ def main():
                                           "data/calibration/sgbm_parameters.p", (640, 480))
     odometer = Odometer(stereo)
     frame_num = 1
-    got_left, img_left = video_left.read()
+
     fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
 
-    videoWriter = cv2.VideoWriter("final_demo.avi", fourcc=fourcc, fps=24.0,
-                                  frameSize=(img_left.shape[1], img_left.shape[0]))
+    videoWriter = cv2.VideoWriter("final_demo_2.avi", fourcc=fourcc, fps=24.0,
+                                  frameSize=(640, 480))
     while True and frame_num < 171:
         got_left, img_left = video_left.read()
         got_right, img_right = video_right.read()
@@ -34,10 +34,10 @@ def main():
         # cv2.imshow("disparity", (self.current_disparity - min)/(max-min))
         normed_disp = (odometer.current_disparity - min) / (max - min)
         three_dimensional_disparity = cv2.cvtColor(normed_disp, cv2.COLOR_GRAY2RGB)
-        drawPoseOnImage(odometer.current_pose(), three_dimensional_disparity)
-        cv2.imshow('disparity with pose', three_dimensional_disparity)
+        drawPoseOnImage(odometer.current_pose(), img_left)
+        cv2.imshow('image with pose', img_left)
         cv2.waitKey(30)
-        videoWriter.write(three_dimensional_disparity)
+        videoWriter.write(img_left)
 
         cv2.imshow("left", img_left)
         if cv2.waitKey(1) == 27:
