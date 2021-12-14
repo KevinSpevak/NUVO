@@ -73,7 +73,7 @@ class Odometer:
         pts_3d = np.array([pts_3d[i] for i in range(len(pts_3d)) if errors[i] < threshold])
         prev_pts_3d = np.array([prev_pts_3d[i] for i in range(len(prev_pts_3d)) if errors[i] < threshold])
 
-        if len(matches) < 10:
+        if len(pts_3d) < 10:
             self.skipped_frames += 1
             return
 

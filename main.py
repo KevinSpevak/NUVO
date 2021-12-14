@@ -6,8 +6,12 @@ from utils.drawPoseOnImage import *
 
 
 def main():
-    video_left = cv2.VideoCapture("data/original/hall_left.avi")
-    video_right = cv2.VideoCapture("data/original/hall_right.avi")
+    # Stereo video sample from library
+    # video_left = cv2.VideoCapture("data/original/hall_left.avi")
+    # video_right = cv2.VideoCapture("data/original/hall_right.avi")
+    # Live capture from webcams
+    video_left = cv2.VideoCapture(6)
+    video_right = cv2.VideoCapture(2)
     stereo = StereoCameraPair.from_pfiles("data/calibration/intrinsics_left.p",
                                           "data/calibration/intrinsics_right.p",
                                           "data/calibration/rectification_parameters.p",
@@ -17,9 +21,9 @@ def main():
 
     fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
 
-    videoWriter = cv2.VideoWriter("final_demo_2.avi", fourcc=fourcc, fps=24.0,
+    videoWriter = cv2.VideoWriter("report_video.avi", fourcc=fourcc, fps=24.0,
                                   frameSize=(640, 480))
-    while True and frame_num < 171:
+    while True:
         got_left, img_left = video_left.read()
         got_right, img_right = video_right.read()
         if not got_left and not got_right:
